@@ -1,7 +1,7 @@
 # Recipe Box — Claude Context
 
 ## Project Purpose
-A client-side recipe manager called "Recipe Box". Users can add, edit, delete, search, sort, and view recipes. Recipes are persisted to `localStorage` — there is no backend or database. The app is a personal tool, not a multi-user platform. Deployed on Vercel.
+A recipe manager called "Recipe Box". Users can add, edit, delete, search, sort, and view recipes. Recipes sync across devices via Firestore. The app is a personal single-user tool deployed on Vercel.
 
 ## Tech Stack
 - **React 18** (JSX, hooks only — no class components)
@@ -99,6 +99,9 @@ npm run dev      # Start dev server at http://localhost:5173
 npm run build    # Production build
 npm run preview  # Preview production build locally
 ```
+
+## Known Issues / In Progress
+- **Google sign-in failing on Vercel** — works on localhost but not in production. Likely cause: Vercel domain not added to Firebase authorized domains. Next step: open browser console on Vercel, check exact error message, and confirm the domain is listed in Firebase → Authentication → Settings → Authorized domains.
 
 ## What's Not Built Yet
 - No image/photo support for recipes
