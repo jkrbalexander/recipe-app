@@ -85,7 +85,7 @@ function RecipeForm({ onAdd }) {
 
 // ── Recipe List ─────────────────────────────────────────────────────────────
 
-function RecipeList({ recipes, onSelect, onDelete }) {
+function RecipeList({ recipes, onSelect, onEdit, onDelete }) {
   if (recipes.length === 0) {
     return <p className="empty-state">No recipes yet. Add one above!</p>
   }
@@ -97,16 +97,77 @@ function RecipeList({ recipes, onSelect, onDelete }) {
           <button className="recipe-name" onClick={() => onSelect(recipe)}>
             {recipe.name}
           </button>
-          <button
-            className="btn btn-delete"
-            onClick={() => onDelete(recipe.id)}
-            aria-label={`Delete ${recipe.name}`}
-          >
-            Delete
-          </button>
+          <div className="card-actions">
+            <button
+              className="btn btn-edit"
+              onClick={() => onEdit(recipe)}
+              aria-label={`Edit ${recipe.name}`}
+            >
+              Edit
+            </button>
+            <button
+              className="btn btn-delete"
+              onClick={() => onDelete(recipe.id)}
+              aria-label={`Delete ${recipe.name}`}
+            >
+              Delete
+            </button>
+          </div>
         </li>
       ))}
     </ul>
+  )
+}
+
+// ── Edit Modal ───────────────────────────────────────────────────────────────
+
+function EditModal({ recipe, onSave, onClose }) {
+  const [name, setName] = useState(recipe.name)
+  const [ingredients, setIngredients] = useState(recipe.ingredients)
+  const [instructions, setInstructions] = useState(recipe.instructions)
+  const [error, setError] = useState('')
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!name.trim() || !ingredients.trim() || !instructions.trim()) {
+      setError('All fields are required.')
+      return
+    }
+    onSave({ ...recipe, name: name.trim(), ingredients: ingredients.trim(), instructions: instructions.trim() })
+  }
+
+  return (
+    <div className="detail-overlay" onClick={onClose}>
+      <div className="detail-card" onClick={(e) => e.stopPropagation()}>
+        <button className="detail-close" onClick={onClose} aria-label="Close">&times;</button>
+        <h2>Edit Recipe</h2>
+        {error && <p className="form-error">{error}</p>}
+        <form className="edit-form" onSubmit={handleSubmit}>
+          <label htmlFor="edit-name">Recipe Name</label>
+          <input
+            id="edit-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <label htmlFor="edit-ingredients">Ingredients</label>
+          <textarea
+            id="edit-ingredients"
+            rows={4}
+            value={ingredients}
+            onChange={(e) => setIngredients(e.target.value)}
+          />
+          <label htmlFor="edit-instructions">Instructions</label>
+          <textarea
+            id="edit-instructions"
+            rows={5}
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+          />
+          <button type="submit" className="btn btn-primary">Save Changes</button>
+        </form>
+      </div>
+    </div>
   )
 }
 
@@ -140,6 +201,7 @@ function RecipeDetail({ recipe, onClose }) {
 export default function App() {
   const [recipes, setRecipes] = useState(loadRecipes)
   const [selected, setSelected] = useState(null)
+  const [editing, setEditing] = useState(null)
 
   useEffect(() => {
     saveRecipes(recipes)
@@ -147,6 +209,12 @@ export default function App() {
 
   function handleAdd(recipe) {
     setRecipes((prev) => [recipe, ...prev])
+  }
+
+  function handleUpdate(updated) {
+    setRecipes((prev) => prev.map((r) => r.id === updated.id ? updated : r))
+    if (selected?.id === updated.id) setSelected(updated)
+    setEditing(null)
   }
 
   function handleDelete(id) {
@@ -168,6 +236,7 @@ export default function App() {
           <RecipeList
             recipes={recipes}
             onSelect={setSelected}
+            onEdit={setEditing}
             onDelete={handleDelete}
           />
         </section>
@@ -175,6 +244,9 @@ export default function App() {
 
       {selected && (
         <RecipeDetail recipe={selected} onClose={() => setSelected(null)} />
+      )}
+      {editing && (
+        <EditModal recipe={editing} onSave={handleUpdate} onClose={() => setEditing(null)} />
       )}
     </div>
   )
