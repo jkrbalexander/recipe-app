@@ -19,12 +19,17 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
 }
 
+function parseTags(str) {
+  return str.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean)
+}
+
 // ── Add Recipe Form ─────────────────────────────────────────────────────────
 
 function RecipeForm({ onAdd }) {
   const [name, setName] = useState('')
   const [ingredients, setIngredients] = useState('')
   const [instructions, setInstructions] = useState('')
+  const [tags, setTags] = useState('')
   const [error, setError] = useState('')
 
   function handleSubmit(e) {
@@ -38,11 +43,13 @@ function RecipeForm({ onAdd }) {
       name: name.trim(),
       ingredients: ingredients.trim(),
       instructions: instructions.trim(),
+      tags: parseTags(tags),
       createdAt: new Date().toISOString(),
     })
     setName('')
     setIngredients('')
     setInstructions('')
+    setTags('')
     setError('')
   }
 
@@ -78,6 +85,15 @@ function RecipeForm({ onAdd }) {
         onChange={(e) => setInstructions(e.target.value)}
       />
 
+      <label htmlFor="tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
+      <input
+        id="tags"
+        type="text"
+        placeholder="e.g. breakfast, vegetarian, quick"
+        value={tags}
+        onChange={(e) => setTags(e.target.value)}
+      />
+
       <button type="submit" className="btn btn-primary">Save Recipe</button>
     </form>
   )
@@ -99,20 +115,55 @@ function SearchBar({ value, onChange }) {
   )
 }
 
+// ── Tag Filter ───────────────────────────────────────────────────────────────
+
+function TagFilter({ allTags, activeTag, onSelect }) {
+  if (allTags.length === 0) return null
+
+  return (
+    <div className="tag-filter">
+      {allTags.map((tag) => (
+        <button
+          key={tag}
+          className={`tag-chip ${activeTag === tag ? 'tag-chip-active' : ''}`}
+          onClick={() => onSelect(activeTag === tag ? null : tag)}
+        >
+          {tag}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ── Recipe List ─────────────────────────────────────────────────────────────
 
-function RecipeList({ recipes, onSelect, onEdit, onDelete }) {
+function RecipeList({ recipes, onSelect, onEdit, onDelete, onTagClick, activeTag }) {
   if (recipes.length === 0) {
-    return <p className="empty-state">No recipes yet. Add one above!</p>
+    return <p className="empty-state">No recipes found.</p>
   }
 
   return (
     <ul className="recipe-list">
       {recipes.map((recipe) => (
         <li key={recipe.id} className="recipe-card">
-          <button className="recipe-name" onClick={() => onSelect(recipe)}>
-            {recipe.name}
-          </button>
+          <div className="card-main">
+            <button className="recipe-name" onClick={() => onSelect(recipe)}>
+              {recipe.name}
+            </button>
+            {recipe.tags?.length > 0 && (
+              <div className="card-tags">
+                {recipe.tags.map((tag) => (
+                  <button
+                    key={tag}
+                    className={`tag-chip tag-chip-sm ${activeTag === tag ? 'tag-chip-active' : ''}`}
+                    onClick={() => onTagClick(activeTag === tag ? null : tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="card-actions">
             <button
               className="btn btn-edit"
@@ -141,6 +192,7 @@ function EditModal({ recipe, onSave, onClose }) {
   const [name, setName] = useState(recipe.name)
   const [ingredients, setIngredients] = useState(recipe.ingredients)
   const [instructions, setInstructions] = useState(recipe.instructions)
+  const [tags, setTags] = useState((recipe.tags || []).join(', '))
   const [error, setError] = useState('')
 
   function handleSubmit(e) {
@@ -149,7 +201,7 @@ function EditModal({ recipe, onSave, onClose }) {
       setError('All fields are required.')
       return
     }
-    onSave({ ...recipe, name: name.trim(), ingredients: ingredients.trim(), instructions: instructions.trim() })
+    onSave({ ...recipe, name: name.trim(), ingredients: ingredients.trim(), instructions: instructions.trim(), tags: parseTags(tags) })
   }
 
   return (
@@ -180,6 +232,14 @@ function EditModal({ recipe, onSave, onClose }) {
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
           />
+          <label htmlFor="edit-tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
+          <input
+            id="edit-tags"
+            type="text"
+            placeholder="e.g. breakfast, vegetarian, quick"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
           <button type="submit" className="btn btn-primary">Save Changes</button>
         </form>
       </div>
@@ -197,6 +257,14 @@ function RecipeDetail({ recipe, onClose }) {
           &times;
         </button>
         <h2>{recipe.name}</h2>
+
+        {recipe.tags?.length > 0 && (
+          <div className="card-tags">
+            {recipe.tags.map((tag) => (
+              <span key={tag} className="tag-chip tag-chip-sm">{tag}</span>
+            ))}
+          </div>
+        )}
 
         <section>
           <h3>Ingredients</h3>
@@ -219,10 +287,15 @@ export default function App() {
   const [selected, setSelected] = useState(null)
   const [editing, setEditing] = useState(null)
   const [query, setQuery] = useState('')
+  const [activeTag, setActiveTag] = useState(null)
 
-  const filtered = query.trim()
-    ? recipes.filter((r) => r.name.toLowerCase().includes(query.toLowerCase()))
-    : recipes
+  const allTags = [...new Set(recipes.flatMap((r) => r.tags || []))].sort()
+
+  const filtered = recipes.filter((r) => {
+    const matchesQuery = !query.trim() || r.name.toLowerCase().includes(query.toLowerCase())
+    const matchesTag = !activeTag || (r.tags || []).includes(activeTag)
+    return matchesQuery && matchesTag
+  })
 
   useEffect(() => {
     saveRecipes(recipes)
@@ -255,11 +328,14 @@ export default function App() {
         <section className="recipe-section">
           <h2>Saved Recipes ({recipes.length})</h2>
           <SearchBar value={query} onChange={setQuery} />
+          <TagFilter allTags={allTags} activeTag={activeTag} onSelect={setActiveTag} />
           <RecipeList
             recipes={filtered}
             onSelect={setSelected}
             onEdit={setEditing}
             onDelete={handleDelete}
+            onTagClick={setActiveTag}
+            activeTag={activeTag}
           />
         </section>
       </main>

@@ -43,6 +43,12 @@
   margin-bottom: 0.25rem;
 }
 
+.label-hint {
+  font-weight: 400;
+  color: #aaa;
+  font-size: 0.8rem;
+}
+
 .recipe-form label {
   font-size: 0.85rem;
   font-weight: 600;
@@ -135,6 +141,67 @@
   border: 1px dashed #ddd;
   border-radius: 8px;
 }
+
+/* ── Tags ────────────────────────────────────────────────────────────────── */
+
+.tag-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.tag-chip {
+  display: inline-block;
+  background: #f0f5ed;
+  color: #4a6040;
+  border: 1px solid #b5c4a8;
+  border-radius: 20px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.tag-chip:hover {
+  background: #ddebd6;
+  border-color: #6a7c5b;
+}
+
+.tag-chip-active {
+  background: #6a7c5b;
+  color: #fff;
+  border-color: #6a7c5b;
+}
+
+.tag-chip-active:hover {
+  background: #556349;
+}
+
+.tag-chip-sm {
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.card-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  min-width: 0;
+}
+
+/* ── Search Bar ──────────────────────────────────────────────────────────── */
 
 .search-bar {
   margin-bottom: 0.75rem;
