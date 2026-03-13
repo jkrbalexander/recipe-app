@@ -83,6 +83,22 @@ function RecipeForm({ onAdd }) {
   )
 }
 
+// ── Search Bar ───────────────────────────────────────────────────────────────
+
+function SearchBar({ value, onChange }) {
+  return (
+    <div className="search-bar">
+      <input
+        type="search"
+        placeholder="Search recipes..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Search recipes"
+      />
+    </div>
+  )
+}
+
 // ── Recipe List ─────────────────────────────────────────────────────────────
 
 function RecipeList({ recipes, onSelect, onEdit, onDelete }) {
@@ -202,6 +218,11 @@ export default function App() {
   const [recipes, setRecipes] = useState(loadRecipes)
   const [selected, setSelected] = useState(null)
   const [editing, setEditing] = useState(null)
+  const [query, setQuery] = useState('')
+
+  const filtered = query.trim()
+    ? recipes.filter((r) => r.name.toLowerCase().includes(query.toLowerCase()))
+    : recipes
 
   useEffect(() => {
     saveRecipes(recipes)
@@ -233,8 +254,9 @@ export default function App() {
 
         <section className="recipe-section">
           <h2>Saved Recipes ({recipes.length})</h2>
+          <SearchBar value={query} onChange={setQuery} />
           <RecipeList
-            recipes={recipes}
+            recipes={filtered}
             onSelect={setSelected}
             onEdit={setEditing}
             onDelete={handleDelete}

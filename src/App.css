@@ -136,6 +136,28 @@
   border-radius: 8px;
 }
 
+.search-bar {
+  margin-bottom: 0.75rem;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #d8d5cd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fafaf8;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: #6a7c5b;
+  background: #fff;
+}
+
 .recipe-list {
   list-style: none;
   display: flex;
