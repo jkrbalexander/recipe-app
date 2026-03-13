@@ -259,6 +259,90 @@ function EditModal({ recipe, onSave, onClose }) {
   )
 }
 
+// ── Share Import Modal ───────────────────────────────────────────────────────
+
+function ShareImport({ shared, onSave, onClose }) {
+  const [name, setName] = useState(shared.title || '')
+  const [ingredients, setIngredients] = useState('')
+  const [instructions, setInstructions] = useState('')
+  const [tags, setTags] = useState('')
+  const [error, setError] = useState('')
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!name.trim() || !ingredients.trim() || !instructions.trim()) {
+      setError('All fields are required.')
+      return
+    }
+    onSave({
+      id: generateId(),
+      name: name.trim(),
+      ingredients: ingredients.trim(),
+      instructions: instructions.trim(),
+      tags: parseTags(tags),
+      createdAt: new Date().toISOString(),
+    })
+  }
+
+  return (
+    <div className="detail-overlay" onClick={onClose}>
+      <div className="detail-card share-import-card" onClick={(e) => e.stopPropagation()}>
+        <button className="detail-close" onClick={onClose} aria-label="Close">&times;</button>
+        <h2>Import Recipe</h2>
+
+        {(shared.url || shared.text) && (
+          <div className="share-source">
+            <p className="share-source-label">Shared from Instagram</p>
+            {shared.url && (
+              <a className="share-source-url" href={shared.url} target="_blank" rel="noreferrer">
+                {shared.url}
+              </a>
+            )}
+            {shared.text && <p className="share-source-text">{shared.text}</p>}
+          </div>
+        )}
+
+        {error && <p className="form-error">{error}</p>}
+        <form className="edit-form" onSubmit={handleSubmit}>
+          <label htmlFor="share-name">Recipe Name</label>
+          <input
+            id="share-name"
+            type="text"
+            placeholder="e.g. Classic Pancakes"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <label htmlFor="share-ingredients">Ingredients</label>
+          <textarea
+            id="share-ingredients"
+            rows={4}
+            placeholder="One ingredient per line"
+            value={ingredients}
+            onChange={(e) => setIngredients(e.target.value)}
+          />
+          <label htmlFor="share-instructions">Instructions</label>
+          <textarea
+            id="share-instructions"
+            rows={5}
+            placeholder="Step-by-step instructions"
+            value={instructions}
+            onChange={(e) => setInstructions(e.target.value)}
+          />
+          <label htmlFor="share-tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
+          <input
+            id="share-tags"
+            type="text"
+            placeholder="e.g. breakfast, vegetarian, quick"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
+          <button type="submit" className="btn btn-primary">Save Recipe</button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Recipe Detail ───────────────────────────────────────────────────────────
 
 function RecipeDetail({ recipe, onClose }) {
@@ -301,6 +385,18 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState(null)
   const [sort, setSort] = useState('newest')
+  const [shareData, setShareData] = useState(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const title = params.get('title') || ''
+    const text = params.get('text') || ''
+    const url = params.get('url') || ''
+    if (title || text || url) {
+      setShareData({ title, text, url })
+      history.replaceState(null, '', '/')
+    }
+  }, [])
 
   const allTags = [...new Set(recipes.flatMap((r) => r.tags || []))].sort()
 
@@ -366,6 +462,13 @@ export default function App() {
       )}
       {editing && (
         <EditModal recipe={editing} onSave={handleUpdate} onClose={() => setEditing(null)} />
+      )}
+      {shareData && (
+        <ShareImport
+          shared={shareData}
+          onSave={(recipe) => { handleAdd(recipe); setShareData(null) }}
+          onClose={() => setShareData(null)}
+        />
       )}
     </div>
   )
