@@ -99,18 +99,30 @@ function RecipeForm({ onAdd }) {
   )
 }
 
-// ── Search Bar ───────────────────────────────────────────────────────────────
+// ── Search Bar + Sort ────────────────────────────────────────────────────────
 
-function SearchBar({ value, onChange }) {
+function SearchBar({ value, onChange, sort, onSort }) {
   return (
-    <div className="search-bar">
+    <div className="search-row">
       <input
+        className="search-input"
         type="search"
         placeholder="Search recipes..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-label="Search recipes"
       />
+      <select
+        className="sort-select"
+        value={sort}
+        onChange={(e) => onSort(e.target.value)}
+        aria-label="Sort recipes"
+      >
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="az">A – Z</option>
+        <option value="za">Z – A</option>
+      </select>
     </div>
   )
 }
@@ -288,14 +300,23 @@ export default function App() {
   const [editing, setEditing] = useState(null)
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState(null)
+  const [sort, setSort] = useState('newest')
 
   const allTags = [...new Set(recipes.flatMap((r) => r.tags || []))].sort()
 
-  const filtered = recipes.filter((r) => {
-    const matchesQuery = !query.trim() || r.name.toLowerCase().includes(query.toLowerCase())
-    const matchesTag = !activeTag || (r.tags || []).includes(activeTag)
-    return matchesQuery && matchesTag
-  })
+  const filtered = recipes
+    .filter((r) => {
+      const q = query.trim().toLowerCase()
+      const matchesQuery = !q || r.name.toLowerCase().includes(q) || r.ingredients.toLowerCase().includes(q)
+      const matchesTag = !activeTag || (r.tags || []).includes(activeTag)
+      return matchesQuery && matchesTag
+    })
+    .sort((a, b) => {
+      if (sort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt)
+      if (sort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt)
+      if (sort === 'az') return a.name.localeCompare(b.name)
+      if (sort === 'za') return b.name.localeCompare(a.name)
+    })
 
   useEffect(() => {
     saveRecipes(recipes)
@@ -327,7 +348,7 @@ export default function App() {
 
         <section className="recipe-section">
           <h2>Saved Recipes ({recipes.length})</h2>
-          <SearchBar value={query} onChange={setQuery} />
+          <SearchBar value={query} onChange={setQuery} sort={sort} onSort={setSort} />
           <TagFilter allTags={allTags} activeTag={activeTag} onSelect={setActiveTag} />
           <RecipeList
             recipes={filtered}
