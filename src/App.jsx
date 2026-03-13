@@ -1,19 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import {
+  collection, doc, setDoc, deleteDoc, onSnapshot,
+} from 'firebase/firestore'
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
+import { auth, db, googleProvider } from './firebase'
 import './App.css'
 
-const STORAGE_KEY = 'recipes'
-
-function loadRecipes() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
-  } catch {
-    return []
-  }
-}
-
-function saveRecipes(recipes) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes))
-}
+const LS_KEY = 'recipes'
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)
@@ -21,6 +14,47 @@ function generateId() {
 
 function parseTags(str) {
   return str.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean)
+}
+
+function recipesRef(uid) {
+  return collection(db, 'users', uid, 'recipes')
+}
+
+function recipeDoc(uid, id) {
+  return doc(db, 'users', uid, 'recipes', id)
+}
+
+// ── Sign In Screen ────────────────────────────────────────────────────────────
+
+function SignIn({ onSignIn }) {
+  const [error, setError] = useState('')
+
+  async function handleSignIn() {
+    try {
+      await signInWithPopup(auth, googleProvider)
+    } catch {
+      setError('Sign-in failed. Please try again.')
+    }
+  }
+
+  return (
+    <div className="signin-screen">
+      <div className="signin-card">
+        <h1>Recipe Box</h1>
+        <p className="signin-subtitle">Save and sync your recipes across all your devices.</p>
+        {error && <p className="form-error">{error}</p>}
+        <button className="btn btn-google" onClick={handleSignIn}>
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
+            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z"/>
+          </svg>
+          Sign in with Google
+        </button>
+      </div>
+    </div>
+  )
 }
 
 // ── Add Recipe Form ─────────────────────────────────────────────────────────
@@ -224,34 +258,13 @@ function EditModal({ recipe, onSave, onClose }) {
         {error && <p className="form-error">{error}</p>}
         <form className="edit-form" onSubmit={handleSubmit}>
           <label htmlFor="edit-name">Recipe Name</label>
-          <input
-            id="edit-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <input id="edit-name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
           <label htmlFor="edit-ingredients">Ingredients</label>
-          <textarea
-            id="edit-ingredients"
-            rows={4}
-            value={ingredients}
-            onChange={(e) => setIngredients(e.target.value)}
-          />
+          <textarea id="edit-ingredients" rows={4} value={ingredients} onChange={(e) => setIngredients(e.target.value)} />
           <label htmlFor="edit-instructions">Instructions</label>
-          <textarea
-            id="edit-instructions"
-            rows={5}
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-          />
+          <textarea id="edit-instructions" rows={5} value={instructions} onChange={(e) => setInstructions(e.target.value)} />
           <label htmlFor="edit-tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
-          <input
-            id="edit-tags"
-            type="text"
-            placeholder="e.g. breakfast, vegetarian, quick"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-          />
+          <input id="edit-tags" type="text" placeholder="e.g. breakfast, vegetarian, quick" value={tags} onChange={(e) => setTags(e.target.value)} />
           <button type="submit" className="btn btn-primary">Save Changes</button>
         </form>
       </div>
@@ -308,37 +321,13 @@ function ShareImport({ shared, onSave, onClose }) {
         {error && <p className="form-error">{error}</p>}
         <form className="edit-form" onSubmit={handleSubmit}>
           <label htmlFor="share-name">Recipe Name</label>
-          <input
-            id="share-name"
-            type="text"
-            placeholder="e.g. Classic Pancakes"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <input id="share-name" type="text" placeholder="e.g. Classic Pancakes" value={name} onChange={(e) => setName(e.target.value)} />
           <label htmlFor="share-ingredients">Ingredients</label>
-          <textarea
-            id="share-ingredients"
-            rows={4}
-            placeholder="One ingredient per line"
-            value={ingredients}
-            onChange={(e) => setIngredients(e.target.value)}
-          />
+          <textarea id="share-ingredients" rows={4} placeholder="One ingredient per line" value={ingredients} onChange={(e) => setIngredients(e.target.value)} />
           <label htmlFor="share-instructions">Instructions</label>
-          <textarea
-            id="share-instructions"
-            rows={5}
-            placeholder="Step-by-step instructions"
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-          />
+          <textarea id="share-instructions" rows={5} placeholder="Step-by-step instructions" value={instructions} onChange={(e) => setInstructions(e.target.value)} />
           <label htmlFor="share-tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
-          <input
-            id="share-tags"
-            type="text"
-            placeholder="e.g. breakfast, vegetarian, quick"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-          />
+          <input id="share-tags" type="text" placeholder="e.g. breakfast, vegetarian, quick" value={tags} onChange={(e) => setTags(e.target.value)} />
           <button type="submit" className="btn btn-primary">Save Recipe</button>
         </form>
       </div>
@@ -352,9 +341,7 @@ function RecipeDetail({ recipe, onClose }) {
   return (
     <div className="detail-overlay" onClick={onClose}>
       <div className="detail-card" onClick={(e) => e.stopPropagation()}>
-        <button className="detail-close" onClick={onClose} aria-label="Close">
-          &times;
-        </button>
+        <button className="detail-close" onClick={onClose} aria-label="Close">&times;</button>
         <h2>{recipe.name}</h2>
 
         {recipe.tags?.length > 0 && (
@@ -382,14 +369,46 @@ function RecipeDetail({ recipe, onClose }) {
 // ── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [recipes, setRecipes] = useState(loadRecipes)
+  const [user, setUser] = useState(undefined) // undefined = loading
+  const [recipes, setRecipes] = useState([])
   const [selected, setSelected] = useState(null)
   const [editing, setEditing] = useState(null)
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState(null)
   const [sort, setSort] = useState('newest')
   const [shareData, setShareData] = useState(null)
+  const migratedRef = useRef(false)
 
+  // Auth listener
+  useEffect(() => {
+    return onAuthStateChanged(auth, (u) => setUser(u))
+  }, [])
+
+  // Firestore real-time listener + localStorage migration
+  useEffect(() => {
+    if (!user) return
+    const unsub = onSnapshot(recipesRef(user.uid), (snap) => {
+      const docs = snap.docs.map((d) => d.data())
+      setRecipes(docs)
+
+      // One-time migration from localStorage
+      if (!migratedRef.current && docs.length === 0) {
+        migratedRef.current = true
+        try {
+          const local = JSON.parse(localStorage.getItem(LS_KEY)) || []
+          if (local.length > 0) {
+            local.forEach((r) => setDoc(recipeDoc(user.uid, r.id), r))
+            localStorage.removeItem(LS_KEY)
+          }
+        } catch {}
+      } else {
+        migratedRef.current = true
+      }
+    })
+    return unsub
+  }, [user])
+
+  // Web Share Target — read URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const title = params.get('title') || ''
@@ -417,29 +436,32 @@ export default function App() {
       if (sort === 'za') return b.name.localeCompare(a.name)
     })
 
-  useEffect(() => {
-    saveRecipes(recipes)
-  }, [recipes])
-
-  function handleAdd(recipe) {
-    setRecipes((prev) => [recipe, ...prev])
+  async function handleAdd(recipe) {
+    await setDoc(recipeDoc(user.uid, recipe.id), recipe)
   }
 
-  function handleUpdate(updated) {
-    setRecipes((prev) => prev.map((r) => r.id === updated.id ? updated : r))
+  async function handleUpdate(updated) {
+    await setDoc(recipeDoc(user.uid, updated.id), updated)
     if (selected?.id === updated.id) setSelected(updated)
     setEditing(null)
   }
 
-  function handleDelete(id) {
-    setRecipes((prev) => prev.filter((r) => r.id !== id))
+  async function handleDelete(id) {
+    await deleteDoc(recipeDoc(user.uid, id))
     if (selected?.id === id) setSelected(null)
   }
+
+  if (user === undefined) return <div className="app-loading">Loading…</div>
+  if (!user) return <SignIn />
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>Recipe Box</h1>
+        <div className="header-user">
+          <img className="user-avatar" src={user.photoURL} alt={user.displayName} referrerPolicy="no-referrer" />
+          <button className="btn-signout" onClick={() => signOut(auth)}>Sign out</button>
+        </div>
       </header>
 
       <main className="app-main">
@@ -448,9 +470,7 @@ export default function App() {
         <section className="recipe-section">
           <div className="section-header">
             <h2>Saved Recipes ({recipes.length})</h2>
-            <button className="btn btn-import" onClick={() => setShareData({})}>
-              + Import
-            </button>
+            <button className="btn btn-import" onClick={() => setShareData({})}>+ Import</button>
           </div>
           <SearchBar value={query} onChange={setQuery} sort={sort} onSort={setSort} />
           <TagFilter allTags={allTags} activeTag={activeTag} onSelect={setActiveTag} />
@@ -465,12 +485,8 @@ export default function App() {
         </section>
       </main>
 
-      {selected && (
-        <RecipeDetail recipe={selected} onClose={() => setSelected(null)} />
-      )}
-      {editing && (
-        <EditModal recipe={editing} onSave={handleUpdate} onClose={() => setEditing(null)} />
-      )}
+      {selected && <RecipeDetail recipe={selected} onClose={() => setSelected(null)} />}
+      {editing && <EditModal recipe={editing} onSave={handleUpdate} onClose={() => setEditing(null)} />}
       {shareData && (
         <ShareImport
           shared={shareData}

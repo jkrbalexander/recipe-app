@@ -1,3 +1,70 @@
+/* ── Sign In ─────────────────────────────────────────────────────────────── */
+
+.signin-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.signin-card {
+  background: #fff;
+  border: 1px solid #e0ddd5;
+  border-radius: 12px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.signin-card h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.signin-subtitle {
+  font-size: 0.95rem;
+  color: #777;
+  line-height: 1.5;
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  margin-top: 0.5rem;
+}
+
+.btn-google:hover {
+  background: #f8f8f8;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.app-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 0.95rem;
+}
+
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 
 .app {
@@ -10,6 +77,43 @@
   padding: 2rem 0 1.5rem;
   border-bottom: 2px solid #e0ddd5;
   margin-bottom: 2rem;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.btn-signout {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: #777;
+  cursor: pointer;
+  padding: 0.3rem 0.65rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-signout:hover {
+  background: #fdf0ee;
+  color: #c0392b;
+  border-color: #f5c6c0;
 }
 
 .app-header h1 {
