@@ -266,6 +266,7 @@ function ShareImport({ shared, onSave, onClose }) {
   const [ingredients, setIngredients] = useState('')
   const [instructions, setInstructions] = useState('')
   const [tags, setTags] = useState('')
+  const [pastedText, setPastedText] = useState(shared.url || shared.text || '')
   const [error, setError] = useState('')
 
   function handleSubmit(e) {
@@ -290,17 +291,19 @@ function ShareImport({ shared, onSave, onClose }) {
         <button className="detail-close" onClick={onClose} aria-label="Close">&times;</button>
         <h2>Import Recipe</h2>
 
-        {(shared.url || shared.text) && (
-          <div className="share-source">
-            <p className="share-source-label">Shared from Instagram</p>
-            {shared.url && (
-              <a className="share-source-url" href={shared.url} target="_blank" rel="noreferrer">
-                {shared.url}
-              </a>
-            )}
-            {shared.text && <p className="share-source-text">{shared.text}</p>}
-          </div>
-        )}
+        <div className="share-source">
+          <label className="share-source-label" htmlFor="paste-input">
+            Paste Instagram link or caption
+          </label>
+          <textarea
+            id="paste-input"
+            className="share-paste-input"
+            rows={3}
+            placeholder="Paste a link or recipe text from Instagram..."
+            value={pastedText}
+            onChange={(e) => setPastedText(e.target.value)}
+          />
+        </div>
 
         {error && <p className="form-error">{error}</p>}
         <form className="edit-form" onSubmit={handleSubmit}>
@@ -443,7 +446,12 @@ export default function App() {
         <RecipeForm onAdd={handleAdd} />
 
         <section className="recipe-section">
-          <h2>Saved Recipes ({recipes.length})</h2>
+          <div className="section-header">
+            <h2>Saved Recipes ({recipes.length})</h2>
+            <button className="btn btn-import" onClick={() => setShareData({})}>
+              + Import
+            </button>
+          </div>
           <SearchBar value={query} onChange={setQuery} sort={sort} onSort={setSort} />
           <TagFilter allTags={allTags} activeTag={activeTag} onSelect={setActiveTag} />
           <RecipeList
