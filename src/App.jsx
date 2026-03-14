@@ -288,12 +288,15 @@ function ShareImport({ shared, onSave, onClose }) {
       setError('All fields are required.')
       return
     }
+    const trimmed = pastedText.trim()
+    const isUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
     onSave({
       id: generateId(),
       name: name.trim(),
       ingredients: ingredients.trim(),
       instructions: instructions.trim(),
       tags: parseTags(tags),
+      sourceUrl: isUrl ? trimmed : '',
       createdAt: new Date().toISOString(),
     })
   }
@@ -350,6 +353,12 @@ function RecipeDetail({ recipe, onClose }) {
               <span key={tag} className="tag-chip tag-chip-sm">{tag}</span>
             ))}
           </div>
+        )}
+
+        {recipe.sourceUrl && (
+          <a className="detail-source-link" href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer">
+            View original post
+          </a>
         )}
 
         <section>

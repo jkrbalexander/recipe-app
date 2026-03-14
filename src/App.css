@@ -562,6 +562,18 @@
   padding-right: 2rem;
 }
 
+.detail-source-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: #e1306c;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.detail-source-link:hover {
+  text-decoration: underline;
+}
+
 .detail-card h3 {
   font-size: 0.85rem;
   font-weight: 700;
