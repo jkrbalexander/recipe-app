@@ -384,9 +384,14 @@ export default function App() {
   const [shareData, setShareData] = useState(null)
   const migratedRef = useRef(false)
 
-  // Auth listener
+  // Auth listener with timeout fallback for IndexedDB hang
   useEffect(() => {
-    return onAuthStateChanged(auth, (u) => setUser(u))
+    const timer = setTimeout(() => setUser((u) => u === undefined ? null : u), 3000)
+    const unsub = onAuthStateChanged(auth, (u) => {
+      clearTimeout(timer)
+      setUser(u)
+    })
+    return () => { clearTimeout(timer); unsub() }
   }, [])
 
   // Firestore real-time listener + localStorage migration
