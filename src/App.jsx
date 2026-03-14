@@ -227,9 +227,9 @@ function RecipeList({ recipes, onSelect, onEdit, onDelete, onTagClick, activeTag
 // ── Edit Modal ───────────────────────────────────────────────────────────────
 
 function EditModal({ recipe, onSave, onClose }) {
-  const [name, setName] = useState(recipe.name)
-  const [ingredients, setIngredients] = useState(recipe.ingredients)
-  const [instructions, setInstructions] = useState(recipe.instructions)
+  const [name, setName] = useState(recipe.name || '')
+  const [ingredients, setIngredients] = useState(recipe.ingredients || '')
+  const [instructions, setInstructions] = useState(recipe.instructions || '')
   const [tags, setTags] = useState((recipe.tags || []).join(', '))
   const [error, setError] = useState('')
 
@@ -430,7 +430,7 @@ export default function App() {
   const filtered = recipes
     .filter((r) => {
       const q = query.trim().toLowerCase()
-      const matchesQuery = !q || r.name.toLowerCase().includes(q) || r.ingredients.toLowerCase().includes(q)
+      const matchesQuery = !q || r.name.toLowerCase().includes(q) || (r.ingredients || '').toLowerCase().includes(q)
       const matchesTag = !activeTag || (r.tags || []).includes(activeTag)
       return matchesQuery && matchesTag
     })
