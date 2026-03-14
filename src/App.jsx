@@ -61,28 +61,29 @@ function SignIn({ onSignIn }) {
 
 function RecipeForm({ onAdd }) {
   const [name, setName] = useState('')
-  const [ingredients, setIngredients] = useState('')
-  const [instructions, setInstructions] = useState('')
+  const [sourceUrl, setSourceUrl] = useState('')
   const [tags, setTags] = useState('')
   const [error, setError] = useState('')
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim() || !ingredients.trim() || !instructions.trim()) {
-      setError('All fields are required.')
+    if (!name.trim()) {
+      setError('Recipe name is required.')
       return
     }
+    const trimmed = sourceUrl.trim()
+    const isUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
     onAdd({
       id: generateId(),
       name: name.trim(),
-      ingredients: ingredients.trim(),
-      instructions: instructions.trim(),
+      ingredients: '',
+      instructions: '',
       tags: parseTags(tags),
+      sourceUrl: isUrl ? trimmed : '',
       createdAt: new Date().toISOString(),
     })
     setName('')
-    setIngredients('')
-    setInstructions('')
+    setSourceUrl('')
     setTags('')
     setError('')
   }
@@ -101,22 +102,13 @@ function RecipeForm({ onAdd }) {
         onChange={(e) => setName(e.target.value)}
       />
 
-      <label htmlFor="ingredients">Ingredients</label>
-      <textarea
-        id="ingredients"
-        placeholder="One ingredient per line"
-        rows={4}
-        value={ingredients}
-        onChange={(e) => setIngredients(e.target.value)}
-      />
-
-      <label htmlFor="instructions">Instructions</label>
-      <textarea
-        id="instructions"
-        placeholder="Step-by-step instructions"
-        rows={5}
-        value={instructions}
-        onChange={(e) => setInstructions(e.target.value)}
+      <label htmlFor="source-url">Link <span className="label-hint">(optional)</span></label>
+      <input
+        id="source-url"
+        type="text"
+        placeholder="e.g. https://www.instagram.com/..."
+        value={sourceUrl}
+        onChange={(e) => setSourceUrl(e.target.value)}
       />
 
       <label htmlFor="tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
@@ -243,8 +235,8 @@ function EditModal({ recipe, onSave, onClose }) {
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (!name.trim() || !ingredients.trim() || !instructions.trim()) {
-      setError('All fields are required.')
+    if (!name.trim()) {
+      setError('Recipe name is required.')
       return
     }
     onSave({ ...recipe, name: name.trim(), ingredients: ingredients.trim(), instructions: instructions.trim(), tags: parseTags(tags) })
@@ -361,15 +353,19 @@ function RecipeDetail({ recipe, onClose }) {
           </a>
         )}
 
-        <section>
-          <h3>Ingredients</h3>
-          <pre className="detail-text">{recipe.ingredients}</pre>
-        </section>
+        {recipe.ingredients && (
+          <section>
+            <h3>Ingredients</h3>
+            <pre className="detail-text">{recipe.ingredients}</pre>
+          </section>
+        )}
 
-        <section>
-          <h3>Instructions</h3>
-          <pre className="detail-text">{recipe.instructions}</pre>
-        </section>
+        {recipe.instructions && (
+          <section>
+            <h3>Instructions</h3>
+            <pre className="detail-text">{recipe.instructions}</pre>
+          </section>
+        )}
       </div>
     </div>
   )
