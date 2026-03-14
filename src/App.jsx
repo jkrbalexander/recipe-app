@@ -26,7 +26,7 @@ function recipeDoc(uid, id) {
 
 // ── Sign In Screen ────────────────────────────────────────────────────────────
 
-function SignIn({ onSignIn }) {
+function SignIn({ error: redirectError }) {
   const [error, setError] = useState('')
 
   async function handleSignIn() {
@@ -37,12 +37,14 @@ function SignIn({ onSignIn }) {
     }
   }
 
+  const displayError = redirectError || error
+
   return (
     <div className="signin-screen">
       <div className="signin-card">
         <h1>Recipe Box</h1>
         <p className="signin-subtitle">Save and sync your recipes across all your devices.</p>
-        {error && <p className="form-error">{error}</p>}
+        {displayError && <p className="form-error">{displayError}</p>}
         <button className="btn btn-google" onClick={handleSignIn}>
           <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
             <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
@@ -379,6 +381,7 @@ function RecipeDetail({ recipe, onClose }) {
 
 export default function App() {
   const [user, setUser] = useState(undefined) // undefined = loading
+  const [authError, setAuthError] = useState('')
   const [recipes, setRecipes] = useState([])
   const [selected, setSelected] = useState(null)
   const [editing, setEditing] = useState(null)
@@ -390,7 +393,7 @@ export default function App() {
 
   // Auth listener — consume any pending redirect result before subscribing
   useEffect(() => {
-    getRedirectResult(auth).catch(() => {})
+    getRedirectResult(auth).catch((err) => setAuthError(err.message))
     return onAuthStateChanged(auth, (u) => setUser(u))
   }, [])
 
@@ -462,7 +465,7 @@ export default function App() {
   }
 
   if (user === undefined) return <div className="app-loading">Loading…</div>
-  if (!user) return <SignIn />
+  if (!user) return <SignIn error={authError} />
 
   return (
     <div className="app">
