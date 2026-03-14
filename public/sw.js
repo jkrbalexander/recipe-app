@@ -11,6 +11,8 @@ self.addEventListener('activate', (e) => {
 })
 
 self.addEventListener('fetch', (e) => {
+  // Let navigation requests go to the network so Firebase redirect auth works
+  if (e.request.mode === 'navigate') return
   e.respondWith(
     caches.match(e.request).then((cached) => cached || fetch(e.request))
   )
