@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   collection, doc, setDoc, deleteDoc, onSnapshot,
 } from 'firebase/firestore'
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
+import { onAuthStateChanged, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth'
 import { auth, db, googleProvider } from './firebase'
 import './App.css'
 
@@ -31,7 +31,7 @@ function SignIn({ onSignIn }) {
 
   async function handleSignIn() {
     try {
-      await signInWithPopup(auth, googleProvider)
+      await signInWithRedirect(auth, googleProvider)
     } catch {
       setError('Sign-in failed. Please try again.')
     }
@@ -388,8 +388,9 @@ export default function App() {
   const [shareData, setShareData] = useState(null)
   const migratedRef = useRef(false)
 
-  // Auth listener
+  // Auth listener — consume any pending redirect result before subscribing
   useEffect(() => {
+    getRedirectResult(auth).catch(() => {})
     return onAuthStateChanged(auth, (u) => setUser(u))
   }, [])
 
