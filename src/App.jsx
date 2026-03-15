@@ -230,6 +230,7 @@ function RecipeList({ recipes, onSelect, onEdit, onDelete, onTagClick, activeTag
 
 function EditModal({ recipe, onSave, onClose }) {
   const [name, setName] = useState(recipe.name || '')
+  const [sourceUrl, setSourceUrl] = useState(recipe.sourceUrl || '')
   const [ingredients, setIngredients] = useState(recipe.ingredients || '')
   const [instructions, setInstructions] = useState(recipe.instructions || '')
   const [tags, setTags] = useState((recipe.tags || []).join(', '))
@@ -241,7 +242,9 @@ function EditModal({ recipe, onSave, onClose }) {
       setError('Recipe name is required.')
       return
     }
-    onSave({ ...recipe, name: name.trim(), ingredients: ingredients.trim(), instructions: instructions.trim(), tags: parseTags(tags) })
+    const trimmed = sourceUrl.trim()
+    const isUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
+    onSave({ ...recipe, name: name.trim(), sourceUrl: isUrl ? trimmed : '', ingredients: ingredients.trim(), instructions: instructions.trim(), tags: parseTags(tags) })
   }
 
   return (
@@ -253,6 +256,8 @@ function EditModal({ recipe, onSave, onClose }) {
         <form className="edit-form" onSubmit={handleSubmit}>
           <label htmlFor="edit-name">Recipe Name</label>
           <input id="edit-name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
+          <label htmlFor="edit-source-url">Link <span className="label-hint">(optional)</span></label>
+          <input id="edit-source-url" type="text" placeholder="e.g. https://www.instagram.com/..." value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
           <label htmlFor="edit-ingredients">Ingredients</label>
           <textarea id="edit-ingredients" rows={4} value={ingredients} onChange={(e) => setIngredients(e.target.value)} />
           <label htmlFor="edit-instructions">Instructions</label>
@@ -260,72 +265,6 @@ function EditModal({ recipe, onSave, onClose }) {
           <label htmlFor="edit-tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
           <input id="edit-tags" type="text" placeholder="e.g. breakfast, vegetarian, quick" value={tags} onChange={(e) => setTags(e.target.value)} />
           <button type="submit" className="btn btn-primary">Save Changes</button>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-// ── Share Import Modal ───────────────────────────────────────────────────────
-
-function ShareImport({ shared, onSave, onClose }) {
-  const [name, setName] = useState(shared.title || '')
-  const [ingredients, setIngredients] = useState('')
-  const [instructions, setInstructions] = useState('')
-  const [tags, setTags] = useState('')
-  const [pastedText, setPastedText] = useState(shared.url || shared.text || '')
-  const [error, setError] = useState('')
-
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!name.trim() || !ingredients.trim() || !instructions.trim()) {
-      setError('All fields are required.')
-      return
-    }
-    const trimmed = pastedText.trim()
-    const isUrl = trimmed.startsWith('http://') || trimmed.startsWith('https://')
-    onSave({
-      id: generateId(),
-      name: name.trim(),
-      ingredients: ingredients.trim(),
-      instructions: instructions.trim(),
-      tags: parseTags(tags),
-      sourceUrl: isUrl ? trimmed : '',
-      createdAt: new Date().toISOString(),
-    })
-  }
-
-  return (
-    <div className="detail-overlay" onClick={onClose}>
-      <div className="detail-card share-import-card" onClick={(e) => e.stopPropagation()}>
-        <button className="detail-close" onClick={onClose} aria-label="Close">&times;</button>
-        <h2>Import Recipe</h2>
-
-        <div className="share-source">
-          <label className="share-source-label" htmlFor="paste-input">
-            Paste Instagram link or caption
-          </label>
-          <textarea
-            id="paste-input"
-            className="share-paste-input"
-            rows={3}
-            placeholder="Paste a link or recipe text from Instagram..."
-            value={pastedText}
-            onChange={(e) => setPastedText(e.target.value)}
-          />
-        </div>
-
-        {error && <p className="form-error">{error}</p>}
-        <form className="edit-form" onSubmit={handleSubmit}>
-          <label htmlFor="share-name">Recipe Name</label>
-          <input id="share-name" type="text" placeholder="e.g. Classic Pancakes" value={name} onChange={(e) => setName(e.target.value)} />
-          <label htmlFor="share-ingredients">Ingredients</label>
-          <textarea id="share-ingredients" rows={4} placeholder="One ingredient per line" value={ingredients} onChange={(e) => setIngredients(e.target.value)} />
-          <label htmlFor="share-instructions">Instructions</label>
-          <textarea id="share-instructions" rows={5} placeholder="Step-by-step instructions" value={instructions} onChange={(e) => setInstructions(e.target.value)} />
-          <label htmlFor="share-tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
-          <input id="share-tags" type="text" placeholder="e.g. breakfast, vegetarian, quick" value={tags} onChange={(e) => setTags(e.target.value)} />
-          <button type="submit" className="btn btn-primary">Save Recipe</button>
         </form>
       </div>
     </div>
@@ -383,7 +322,6 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState(null)
   const [sort, setSort] = useState('newest')
-  const [shareData, setShareData] = useState(null)
   const migratedRef = useRef(false)
 
   // Auth listener with timeout fallback for IndexedDB hang
@@ -426,19 +364,7 @@ export default function App() {
     return unsub
   }, [user])
 
-  // Web Share Target — read URL params
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const title = params.get('title') || ''
-    const text = params.get('text') || ''
-    const url = params.get('url') || ''
-    if (title || text || url) {
-      setShareData({ title, text, url })
-      history.replaceState(null, '', '/')
-    }
-  }, [])
-
-  const allTags = [...new Set(recipes.flatMap((r) => r.tags || []))].sort()
+const allTags = [...new Set(recipes.flatMap((r) => r.tags || []))].sort()
 
   const filtered = recipes
     .filter((r) => {
@@ -488,7 +414,6 @@ export default function App() {
         <section className="recipe-section">
           <div className="section-header">
             <h2>Saved Recipes ({recipes.length})</h2>
-            <button className="btn btn-import" onClick={() => setShareData({})}>+ Import</button>
           </div>
           <SearchBar value={query} onChange={setQuery} sort={sort} onSort={setSort} />
           <TagFilter allTags={allTags} activeTag={activeTag} onSelect={setActiveTag} />
@@ -505,13 +430,6 @@ export default function App() {
 
       {selected && <RecipeDetail recipe={selected} onClose={() => setSelected(null)} />}
       {editing && <EditModal recipe={editing} onSave={handleUpdate} onClose={() => setEditing(null)} />}
-      {shareData && (
-        <ShareImport
-          shared={shareData}
-          onSave={(recipe) => { handleAdd(recipe); setShareData(null) }}
-          onClose={() => setShareData(null)}
-        />
-      )}
     </div>
   )
 }
