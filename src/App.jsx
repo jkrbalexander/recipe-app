@@ -42,7 +42,7 @@ function SignIn({ onSignIn }) {
   return (
     <div className="signin-screen">
       <div className="signin-card">
-        <h1>Recipe Box</h1>
+        <h1>Kari's Favorites</h1>
         <p className="signin-subtitle">Save and sync your recipes across all your devices.</p>
         {error && <p className="form-error">{error}</p>}
         <button className="btn btn-google" onClick={handleSignIn}>
@@ -401,7 +401,7 @@ const allTags = [...new Set(recipes.flatMap((r) => r.tags || []))].sort()
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Recipe Box</h1>
+        <h1>Kari's Favorites</h1>
         <div className="header-user">
           <img className="user-avatar" src={user.photoURL} alt={user.displayName} referrerPolicy="no-referrer" />
           <button className="btn-signout" onClick={() => signOut(auth)}>Sign out</button>

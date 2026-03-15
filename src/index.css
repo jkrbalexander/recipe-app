@@ -6,7 +6,24 @@
 
 body {
   font-family: system-ui, -apple-system, sans-serif;
-  background: #f5f5f0;
   color: #222;
   min-height: 100vh;
+  background-color: #c8b89a;
+  background-image: url('/bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(245, 240, 230, 0.72);
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
