@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  collection, doc, setDoc, deleteDoc, onSnapshot,
+  collection, doc, setDoc, deleteDoc, onSnapshot, getDocs,
 } from 'firebase/firestore'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import { auth, db, googleProvider } from './firebase'
@@ -16,12 +16,14 @@ function parseTags(str) {
   return str.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean)
 }
 
-function recipesRef(uid) {
-  return collection(db, 'users', uid, 'recipes')
+const SHARED_ID = 'family'
+
+function recipesRef() {
+  return collection(db, 'users', SHARED_ID, 'recipes')
 }
 
-function recipeDoc(uid, id) {
-  return doc(db, 'users', uid, 'recipes', id)
+function recipeDoc(id) {
+  return doc(db, 'users', SHARED_ID, 'recipes', id)
 }
 
 // ── Sign In Screen ────────────────────────────────────────────────────────────
@@ -394,23 +396,29 @@ export default function App() {
     return () => { clearTimeout(timer); unsub() }
   }, [])
 
-  // Firestore real-time listener + localStorage migration
+  // Firestore real-time listener + migration
   useEffect(() => {
     if (!user) return
-    const unsub = onSnapshot(recipesRef(user.uid), (snap) => {
+    const unsub = onSnapshot(recipesRef(), (snap) => {
       const docs = snap.docs.map((d) => d.data())
       setRecipes(docs)
 
-      // One-time migration from localStorage
+      // One-time migration: per-user Firestore → shared, then localStorage → shared
       if (!migratedRef.current && docs.length === 0) {
         migratedRef.current = true
-        try {
-          const local = JSON.parse(localStorage.getItem(LS_KEY)) || []
-          if (local.length > 0) {
-            local.forEach((r) => setDoc(recipeDoc(user.uid, r.id), r))
-            localStorage.removeItem(LS_KEY)
+        getDocs(collection(db, 'users', user.uid, 'recipes')).then((oldSnap) => {
+          if (!oldSnap.empty) {
+            oldSnap.docs.forEach((d) => setDoc(recipeDoc(d.id), d.data()))
+          } else {
+            try {
+              const local = JSON.parse(localStorage.getItem(LS_KEY)) || []
+              if (local.length > 0) {
+                local.forEach((r) => setDoc(recipeDoc(r.id), r))
+                localStorage.removeItem(LS_KEY)
+              }
+            } catch {}
           }
-        } catch {}
+        })
       } else {
         migratedRef.current = true
       }
@@ -447,17 +455,17 @@ export default function App() {
     })
 
   async function handleAdd(recipe) {
-    await setDoc(recipeDoc(user.uid, recipe.id), recipe)
+    await setDoc(recipeDoc(recipe.id), recipe)
   }
 
   async function handleUpdate(updated) {
-    await setDoc(recipeDoc(user.uid, updated.id), updated)
+    await setDoc(recipeDoc(updated.id), updated)
     if (selected?.id === updated.id) setSelected(updated)
     setEditing(null)
   }
 
   async function handleDelete(id) {
-    await deleteDoc(recipeDoc(user.uid, id))
+    await deleteDoc(recipeDoc(id))
     if (selected?.id === id) setSelected(null)
   }
 
