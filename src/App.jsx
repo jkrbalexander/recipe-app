@@ -234,47 +234,96 @@ function RecipeList({ recipes, onSelect, onEdit, onDelete, onTagClick, activeTag
   )
 }
 
-// ── Edit Modal ───────────────────────────────────────────────────────────────
+// ── Recipe Detail (view + edit) ──────────────────────────────────────────────
 
-function EditModal({ recipe, onSave, onClose }) {
+function RecipeDetail({ recipe, onClose, onSave, initialEditing = false }) {
+  const [isEditing, setIsEditing] = useState(initialEditing)
   const [name, setName] = useState(recipe.name)
   const [ingredients, setIngredients] = useState(recipe.ingredients)
   const [instructions, setInstructions] = useState(recipe.instructions)
   const [tags, setTags] = useState((recipe.tags || []).join(', '))
   const [error, setError] = useState('')
 
-  function handleSubmit(e) {
+  function handleSave(e) {
     e.preventDefault()
     if (!name.trim() || !ingredients.trim() || !instructions.trim()) {
       setError('All fields are required.')
       return
     }
     onSave({ ...recipe, name: name.trim(), ingredients: ingredients.trim(), instructions: instructions.trim(), tags: parseTags(tags) })
+    setIsEditing(false)
+    setError('')
+  }
+
+  function handleCancel() {
+    setName(recipe.name)
+    setIngredients(recipe.ingredients)
+    setInstructions(recipe.instructions)
+    setTags((recipe.tags || []).join(', '))
+    setError('')
+    setIsEditing(false)
   }
 
   return (
     <div className="detail-overlay" onClick={onClose}>
       <div className="detail-card" onClick={(e) => e.stopPropagation()}>
         <button className="detail-close" onClick={onClose} aria-label="Close">&times;</button>
-        <h2>Edit Recipe</h2>
-        {error && <p className="form-error">{error}</p>}
-        <form className="edit-form" onSubmit={handleSubmit}>
-          <label htmlFor="edit-name">Recipe Name</label>
-          <input id="edit-name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
-          <label htmlFor="edit-ingredients">Ingredients</label>
-          <textarea id="edit-ingredients" rows={4} value={ingredients} onChange={(e) => setIngredients(e.target.value)} />
-          <label htmlFor="edit-instructions">Instructions</label>
-          <textarea id="edit-instructions" rows={5} value={instructions} onChange={(e) => setInstructions(e.target.value)} />
-          <label htmlFor="edit-tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
-          <input id="edit-tags" type="text" placeholder="e.g. breakfast, vegetarian, quick" value={tags} onChange={(e) => setTags(e.target.value)} />
-          <button type="submit" className="btn btn-primary">Save Changes</button>
-        </form>
+
+        {isEditing ? (
+          <>
+            <h2>Edit Recipe</h2>
+            {error && <p className="form-error">{error}</p>}
+            <form className="edit-form" onSubmit={handleSave}>
+              <label htmlFor="edit-name">Recipe Name</label>
+              <input id="edit-name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
+              <label htmlFor="edit-ingredients">Ingredients</label>
+              <textarea id="edit-ingredients" rows={4} value={ingredients} onChange={(e) => setIngredients(e.target.value)} />
+              <label htmlFor="edit-instructions">Instructions</label>
+              <textarea id="edit-instructions" rows={5} value={instructions} onChange={(e) => setInstructions(e.target.value)} />
+              <label htmlFor="edit-tags">Tags <span className="label-hint">(comma-separated, optional)</span></label>
+              <input id="edit-tags" type="text" placeholder="e.g. breakfast, vegetarian, quick" value={tags} onChange={(e) => setTags(e.target.value)} />
+              <div className="edit-actions">
+                <button type="submit" className="btn btn-primary">Save Changes</button>
+                <button type="button" className="btn btn-secondary" onClick={handleCancel}>Cancel</button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <>
+            <div className="detail-header">
+              <h2>{recipe.name}</h2>
+              <button className="btn btn-edit" onClick={() => setIsEditing(true)}>Edit</button>
+            </div>
+
+            {recipe.tags?.length > 0 && (
+              <div className="card-tags">
+                {recipe.tags.map((tag) => (
+                  <span key={tag} className="tag-chip tag-chip-sm">{tag}</span>
+                ))}
+              </div>
+            )}
+
+            {recipe.sourceUrl && (
+              <a className="detail-source-link" href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer">
+                View original post
+              </a>
+            )}
+
+            <section>
+              <h3>Ingredients</h3>
+              <pre className="detail-text">{recipe.ingredients}</pre>
+            </section>
+
+            <section>
+              <h3>Instructions</h3>
+              <pre className="detail-text">{recipe.instructions}</pre>
+            </section>
+          </>
+        )}
       </div>
     </div>
   )
 }
-
-// ── Share Import Modal ───────────────────────────────────────────────────────
 
 function ShareImport({ shared, onSave, onClose }) {
   const [name, setName] = useState(shared.title || '')
@@ -340,43 +389,6 @@ function ShareImport({ shared, onSave, onClose }) {
   )
 }
 
-// ── Recipe Detail ───────────────────────────────────────────────────────────
-
-function RecipeDetail({ recipe, onClose }) {
-  return (
-    <div className="detail-overlay" onClick={onClose}>
-      <div className="detail-card" onClick={(e) => e.stopPropagation()}>
-        <button className="detail-close" onClick={onClose} aria-label="Close">&times;</button>
-        <h2>{recipe.name}</h2>
-
-        {recipe.tags?.length > 0 && (
-          <div className="card-tags">
-            {recipe.tags.map((tag) => (
-              <span key={tag} className="tag-chip tag-chip-sm">{tag}</span>
-            ))}
-          </div>
-        )}
-
-        {recipe.sourceUrl && (
-          <a className="detail-source-link" href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer">
-            View original post
-          </a>
-        )}
-
-        <section>
-          <h3>Ingredients</h3>
-          <pre className="detail-text">{recipe.ingredients}</pre>
-        </section>
-
-        <section>
-          <h3>Instructions</h3>
-          <pre className="detail-text">{recipe.instructions}</pre>
-        </section>
-      </div>
-    </div>
-  )
-}
-
 // ── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -384,7 +396,7 @@ export default function App() {
   const [authError, setAuthError] = useState('')
   const [recipes, setRecipes] = useState([])
   const [selected, setSelected] = useState(null)
-  const [editing, setEditing] = useState(null)
+  const [detailEditMode, setDetailEditMode] = useState(false)
   const [query, setQuery] = useState('')
   const [activeTag, setActiveTag] = useState(null)
   const [sort, setSort] = useState('newest')
@@ -455,13 +467,27 @@ export default function App() {
 
   async function handleUpdate(updated) {
     await setDoc(recipeDoc(user.uid, updated.id), updated)
-    if (selected?.id === updated.id) setSelected(updated)
-    setEditing(null)
+    setSelected(updated)
   }
 
   async function handleDelete(id) {
     await deleteDoc(recipeDoc(user.uid, id))
-    if (selected?.id === id) setSelected(null)
+    if (selected?.id === id) { setSelected(null); setDetailEditMode(false) }
+  }
+
+  function openDetail(recipe) {
+    setSelected(recipe)
+    setDetailEditMode(false)
+  }
+
+  function openDetailEdit(recipe) {
+    setSelected(recipe)
+    setDetailEditMode(true)
+  }
+
+  function closeDetail() {
+    setSelected(null)
+    setDetailEditMode(false)
   }
 
   if (user === undefined) return <div className="app-loading">Loading…</div>
@@ -489,8 +515,8 @@ export default function App() {
           <TagFilter allTags={allTags} activeTag={activeTag} onSelect={setActiveTag} />
           <RecipeList
             recipes={filtered}
-            onSelect={setSelected}
-            onEdit={setEditing}
+            onSelect={openDetail}
+            onEdit={openDetailEdit}
             onDelete={handleDelete}
             onTagClick={setActiveTag}
             activeTag={activeTag}
@@ -498,8 +524,14 @@ export default function App() {
         </section>
       </main>
 
-      {selected && <RecipeDetail recipe={selected} onClose={() => setSelected(null)} />}
-      {editing && <EditModal recipe={editing} onSave={handleUpdate} onClose={() => setEditing(null)} />}
+      {selected && (
+        <RecipeDetail
+          recipe={selected}
+          onClose={closeDetail}
+          onSave={handleUpdate}
+          initialEditing={detailEditMode}
+        />
+      )}
       {shareData && (
         <ShareImport
           shared={shareData}
