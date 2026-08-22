@@ -1,7 +1,7 @@
 # Recipe Box — Claude Context
 
 ## Project Purpose
-A recipe manager called "Recipe Box". Users can add, edit, delete, search, sort, and view recipes. Recipes sync across devices via Firestore. The app is a personal single-user tool deployed on Vercel.
+A recipe manager called "Recipe Box". Users can add, edit, delete, search, sort, and view recipes. Recipes sync across devices via Firestore. The app is a personal single-user tool deployed on Firebase Hosting at https://recipe-box-f12e4.web.app/.
 
 ## Tech Stack
 - **React 18** (JSX, hooks only — no class components)
@@ -36,11 +36,12 @@ Everything lives in `src/App.jsx` — components have not been split into separa
 
 ## Firebase Setup
 - **Project ID:** `recipe-box-f12e4`
-- **Auth:** Google sign-in only. Authorized domains must include `localhost` and the Vercel URL.
+- **Auth:** Google sign-in via `signInWithRedirect` (not popup — avoids storage-partitioning issues in Edge/Safari). Authorized domains must include `localhost` and `recipe-box-f12e4.web.app`.
+- **Hosting:** Firebase Hosting at https://recipe-box-f12e4.web.app/
 - **Firestore path:** `users/{uid}/recipes/{recipeId}` — each document is a full recipe object
 - **Security rules:** Users can only read/write their own recipes (`request.auth.uid == userId`)
 - **Offline persistence:** Enabled via `enableIndexedDbPersistence(db)` in `firebase.js`
-- **Environment variables:** All `VITE_FIREBASE_*` — set in `.env` locally and in Vercel dashboard for production
+- **Environment variables:** All `VITE_FIREBASE_*` — set in `.env` locally and configured for the Firebase Hosting build for production
 - **Migration:** On first sign-in, if Firestore is empty and `localStorage` has recipes, they are auto-migrated and localStorage is cleared
 
 ## Data Model
@@ -64,8 +65,7 @@ Each recipe stored in Firestore as a document:
 | `SearchBar` | Filters list by name or ingredients. Includes sort dropdown. |
 | `TagFilter` | Clickable tag chips derived from all recipes. Filters list by tag. |
 | `RecipeList` | Renders recipe cards. Tags on cards are also clickable filters. |
-| `EditModal` | Modal overlay to edit an existing recipe. Pre-fills all fields including tags. |
-| `RecipeDetail` | Read-only modal overlay showing full recipe details and tags. |
+| `RecipeDetail` | Modal overlay showing full recipe details and tags, with an inline Edit toggle — no separate edit modal. Card's Edit button opens it directly in edit mode. |
 | `ShareImport` | Modal for importing a recipe. Has a paste area for Instagram links/captions. |
 | `App` | Root. Owns all state. Manages auth listener and Firestore snapshot listener. |
 
@@ -73,7 +73,7 @@ Each recipe stored in Firestore as a document:
 - `user` — Firebase auth user (`undefined` while loading, `null` if signed out, user object if signed in)
 - `recipes` — populated by Firestore `onSnapshot` listener
 - `selected` — recipe currently shown in RecipeDetail modal
-- `editing` — recipe currently open in EditModal
+- `detailEditMode` — whether RecipeDetail opens in edit mode (true when opened via a card's Edit button)
 - `query` — search string (filters by name + ingredients)
 - `activeTag` — currently selected tag filter
 - `sort` — one of `'newest' | 'oldest' | 'az' | 'za'`
@@ -101,7 +101,7 @@ npm run preview  # Preview production build locally
 ```
 
 ## Known Issues / In Progress
-- **Google sign-in failing on Vercel** — works on localhost but not in production. Likely cause: Vercel domain not added to Firebase authorized domains. Next step: open browser console on Vercel, check exact error message, and confirm the domain is listed in Firebase → Authentication → Settings → Authorized domains.
+- **Google sign-in in production** — was failing intermittently in Edge/Safari due to `signInWithPopup` relying on cross-origin sessionStorage, which those browsers partition. Fixed by switching to `signInWithRedirect` + `getRedirectResult`. Also fixed the service worker's `fetch` handler intercepting the OAuth redirect navigation (now skips `navigate`-mode requests). Redirect errors are now surfaced on the sign-in screen instead of failing silently.
 
 ## What's Not Built Yet
 - No image/photo support for recipes
